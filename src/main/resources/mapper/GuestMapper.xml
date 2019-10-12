@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.oceanleo.blog.mapper.GuestMapper">
+  <resultMap id="BaseResultMap" type="com.oceanleo.blog.domain.Guest">
+    <id column="id" property="id"/>
+    <result column="name" property="name"/>
+    <result column="mail" property="mail"/>
+    <result column="address" property="address"/>
+    <result column="content" property="content"/>
+    <result column="parent_id" property="parentId"/>
+    <result column="create_date" property="createDate"/>
+    <result column="serial" property="serial"/>
+    <result column="reply_id" property="replyId"/>
+    <result column="admin" property="admin"/>
+    <result column="deleted" property="deleted"/>
+  </resultMap>
+
+  <resultMap id="ResultMap" type="com.oceanleo.blog.dto.GuestDto" extends="BaseResultMap">
+    <result column="reply_name" property="replyName"/>
+    <result column="reply_admin" property="replyAdmin"/>
+    <collection property="children" column="id" ofType="com.oceanleo.blog.dto.GuestDto"
+                select="com.oceanleo.blog.mapper.GuestMapper.selectDtoByParentId"/>
+  </resultMap>
+
+  <delete id="deleteById" parameterType="java.lang.String">
+    delete from guest where id = #{id}
+  </delete>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="com.oceanleo.blog.domain.Guest">
+    insert into guest (
+      name, mail, address, content, parent_id, create_date, serial, reply_id, admin, deleted)
+    values (
+      #{name}, #{mail}, #{address}, #{content}, #{parentId}, #{createDate}, #{serial}, #{replyId}, #{admin}, 0)
+  </insert>
+
+  <select id="selectList" resultMap="ResultMap" parameterType="com.oceanleo.blog.query.BaseQuery">
+      select
+        id, name, content, create_date, serial, reply_id, admin, deleted
+      from guest
+      where parent_id = '0'
+      order by serial desc
+  </select>
+
+  <select id="selectDtoByParentId" resultMap="ResultMap" parameterType="String">
+      select
+        c.id, c.name, c.content, c.create_date, c.serial, c.admin, r.name reply_name, r.admin reply_admin
+      from guest c
+      left join guest r on r.id = c.reply_id
+      where c.parent_id = #{parentId}
+      order by c.create_date
+  </select>
+
+  <select id="selectSerial" parameterType="String" resultType="Integer">
+    select ifnull(max(serial), 0) + 1 from guest where parent_id = #{parentId}
+  </select>
+</mapper>
